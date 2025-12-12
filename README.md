@@ -1,12 +1,21 @@
 # Event_Driven_Rec
-This directory contains a script that applies our proposed methodology and the fixed design to the CGD datasets. The script implements the complete analysis pipeline end‑to‑end, including data preparation, application of the proposed approach, and evaluation under the fixed design framework.
-Overview
-• Unified workflow
-All code is written in one script to ensure a streamlined, reproducible workflow.
-• Application of our proposal
-The script implements the full procedure described in our proposal, covering data processing, model fitting, and result generation.
-• Fixed design implementation
-The fixed design is applied to the CGD datasets within the same script, allowing direct comparison and consistent execution.
-Usage
-Run the script as a standalone file to reproduce the full analysis. Comments within the script describe each step of the workflow.
+This directory contains a single R script that applies our proposed blind monitoring procedure and the conventional event-driven design (fixed‑design) analysis to the Chronic Granulomatous Disease (CGD) dataset.
 
+The analysis pipeline consists of three major components: data preparation, the proposed method (continuous/daily monitoring), and the fixed design.
+
+## Script Structure
+
+The script is organized into the following sections:
+
+1. **Data Preparation**  
+2. **Helper Functions** (Andersen–Gill data construction for final analysis)  
+3. **Proposed Blind Monitoring Procedure** (Daily Monitoring)  
+4. **Fixed Design**  
+5. **Output Summary**
+
+## Dependencies
+
+- survival
+- dplyr
+- tidyr
+- purrr
