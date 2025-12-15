@@ -319,7 +319,7 @@ for (t in monitor_times) {
                                 fit_summary     <- summary(fit)
                                 beta_est_fix    <- fit_summary$coefficients["x", "coef"]
                                 beta_robse_fix  <- fit_summary$coefficients["x", "robust se"]
-                                p_value_fix     <- fit_summary$waldtest["pvalue"]
+                                p_value_fix     <- fit_summary$robscore["pvalue"]
                                 
                         }, error = function(e) {
                                 cat("Fixed design: Cox model failed:", conditionMessage(e), "\n")
@@ -353,5 +353,6 @@ cat("Total events L          =", L_fix, "\n")
 cat("beta                    =", beta_est_fix, "\n")
 cat("robust SE               =", beta_robse_fix, "\n")
 cat("p-value                 =", p_value_fix, "\n")
+
 
 
