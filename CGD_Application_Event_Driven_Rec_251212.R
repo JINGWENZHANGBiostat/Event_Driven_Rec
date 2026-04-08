@@ -1,7 +1,7 @@
 ###############################################
 # Application to the CGD dataset
 # - Proposed event-driven design
-# - Fixed design, target number of events as 39
+# - Fixed design, target number of events calculated using Ingel (2014) eq(6)
 ###############################################
 
 library(survival)
@@ -10,11 +10,42 @@ library(dplyr)
 library(purrr)
 
 ################################################
-# 1. Data preparation for CGD dataset
+# 0. Calculation of the target number of events for the fixed design
 ################################################
 
 # Load CGD data
 data(cgd, package = "survival")
+
+# get frailty variance
+cgd_placebo <- cgd[cgd$treat == "placebo",]
+
+frailty_est_placebo <- coxph(
+  Surv(tstart, tstop, status) ~ frailty.gamma(id, method = "em"),
+  data = cgd_placebo,ties="breslow"
+)
+
+var_frailty_coxph <- tail(frailty_est_placebo$history[[1]]$history[, "theta"], 1)
+
+# get annual event rate in placebo group: assume constant
+events_placebo <- sum(cgd_placebo$status)
+
+cgd0_placebo <- cgd0[cgd0$treat == 0,]
+fudays_placebo <- sum(cgd0_placebo$futime)
+
+annualrate_placebo <- events_placebo / fudays_placebo * 365.25
+
+# calculate target number of events: Ingel (2014) equation (6)
+tau_plan <- 1
+Z_alpha_2 <- qnorm(1-0.05/2)
+Z_power <- qnorm(0.8)
+beta_cgd <- log(0.3)
+
+L_target <- ceiling(4 * (1+var_frailty_coxph*annualrate_placebo*tau_plan*
+                           ((1+exp(2*beta_cgd))/(1+exp(beta_cgd)))) * ((Z_alpha_2 + Z_power)/(beta_cgd))^2)
+
+################################################
+# 1. Data preparation for CGD dataset
+################################################
 
 # 1.1 Randomization dates and study time scale
 cgd0$rand_str <- as.character(cgd0$random)
@@ -143,7 +174,7 @@ study_period <- as.numeric(
 )
 
 monitor_start <- 7
-monitor_times <- seq(monitor_start, study_period, by = 1)
+monitor_times <- seq(monitor_start, study_period, by = 1) #adjust frequency of monitoring if necessary
 
 ################################################
 # 2. Proposed procedure: blind continuous monitoring procedure
@@ -300,7 +331,7 @@ for (t in monitor_times) {
         if (L == 0) next
         
         # decision: stop when total events reach the fixed target 39
-        if (L >= 39 || (L > 0 && t == study_period)) {
+        if (L >= L_target || (L > 0 && t == study_period)) {
                 
                 t_final_fix <- t
                 L_fix       <- L
@@ -347,6 +378,11 @@ cat("beta                    =", beta_est_prop, "\n")
 cat("robust SE               =", beta_robse_prop, "\n")
 cat("p-value                 =", p_value_prop, "\n\n")
 
+# get upper and lower bounds for HR
+HR_est_prop <- exp(beta_est_prop)
+lower_95_prop <- exp(beta_est_prop - 1.96 * beta_robse_prop)
+upper_95_prop <- exp(beta_est_prop + 1.96 * beta_robse_prop)
+
 cat("===== Conventional fixed design =====\n")
 cat("Monitoring time t       =", t_final_fix, "\n")
 cat("Total events L          =", L_fix, "\n")
@@ -354,5 +390,9 @@ cat("beta                    =", beta_est_fix, "\n")
 cat("robust SE               =", beta_robse_fix, "\n")
 cat("p-value                 =", p_value_fix, "\n")
 
+# get upper and lower bounds for HR
+HR_est_fix <- exp(beta_est_fix)
+lower_95_fix <- exp(beta_est_fix - 1.96 * beta_robse_fix)
+upper_95_fix <- exp(beta_est_fix + 1.96 * beta_robse_fix)
 
 
