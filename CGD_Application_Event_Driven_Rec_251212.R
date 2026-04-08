@@ -8,6 +8,7 @@ library(survival)
 library(tidyr)
 library(dplyr)
 library(purrr)
+library(frailtyEM)
 
 ################################################
 # 0. Calculation of the target number of events for the fixed design
@@ -19,12 +20,12 @@ data(cgd, package = "survival")
 # get frailty variance
 cgd_placebo <- cgd[cgd$treat == "placebo",]
 
-frailty_est_placebo <- coxph(
-  Surv(tstart, tstop, status) ~ frailty.gamma(id, method = "em"),
-  data = cgd_placebo,ties="breslow"
+frailty_est_placebo <- emfrail(
+  formula = Surv(tstart, tstop, status) ~ cluster(id),
+  data = cgd_placebo
 )
 
-var_frailty_coxph <- tail(frailty_est_placebo$history[[1]]$history[, "theta"], 1)
+var_frailty_em <- 1 / exp(frailty_est_placebo$logtheta)
 
 # get annual event rate in placebo group: assume constant
 events_placebo <- sum(cgd_placebo$status)
@@ -40,7 +41,7 @@ Z_alpha_2 <- qnorm(1-0.05/2)
 Z_power <- qnorm(0.8)
 beta_cgd <- log(0.3)
 
-L_target <- ceiling(4 * (1+var_frailty_coxph*annualrate_placebo*tau_plan*
+L_target <- ceiling(4 * (1+var_frailty_em*annualrate_placebo*tau_plan*
                            ((1+exp(2*beta_cgd))/(1+exp(beta_cgd)))) * ((Z_alpha_2 + Z_power)/(beta_cgd))^2)
 
 ################################################
